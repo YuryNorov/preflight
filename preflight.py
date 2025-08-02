@@ -16,9 +16,25 @@ def weight_balance(front, middle, rear, fuel_main, fuel_tips, fbaggage, rbaggage
     empty_weight = 3193.95
     empty_moment = 290084
 
-    weight = empty_weight + front + middle + rear + fuel_main * 6  + fuel_tips * 6  + fbaggage + rbaggage
+    weight = ( empty_weight +
+               front +
+               middle +
+               rear +
+               fuel_main * 6  +
+               fuel_tips * 6  +
+               fbaggage +
+               rbaggage
+            )
 
-    moment = empty_moment + 89 * front + 126 * middle + 157 * rear + 113 * fuel_main * 6 + 116 * fuel_tips * 6 + 10 * fbaggage + 183 * rbaggage
+    moment = ( empty_moment +
+               89 * front +
+               126 * middle +
+               157 * rear +
+               113 * fuel_main * 6 +
+               116 * fuel_tips * 6 +
+               10 * fbaggage +
+               183 * rbaggage
+            )
 
     return weight, moment, moment / weight
 
