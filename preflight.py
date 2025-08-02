@@ -296,7 +296,7 @@ if __name__ == "__main__":
     print(f"{'Moment':20} {'in*lbs':10} {int(moment):8,.0f}")
     print(f"{'Center Gravity':20} {'in':10} {cg:8,.1f}")
 
-    print(f"{'\nPerformace':12} {'Weight':>6} {'CG':>6} {'Calm':>6} {'Wind':>6} {'Gusts':>6}")
-    print("-" * 46)
-    print(f"{'Takeoff, ft':10} {weight:6,.0f} {cg:6,.1f} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
-    print(f"{'Landing, ft':10} {weight:6,.0f} {cg:6,.1f} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
+    print(f"{'\nPerformace':12} {'CG':>6} {'Calm':>6} {'Wind':>6} {'Gusts':>6}")
+    print("-" * 40)
+    print(f"{'Takeoff, ft':10} {cg:6,.1f} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
+    print(f"{'Landing, ft':10} {cg:6,.1f} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
