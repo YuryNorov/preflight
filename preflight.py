@@ -12,6 +12,107 @@ from bs4 import BeautifulSoup
 
 import pandas as pd
 
+def accelerate_stop_distance(temperature_f, pressure_altitude_ft, gross_weight_lbs, headwind_mph=0):
+    """
+    Complete accelerate-stop distance formula for PA-23-250 Aztec C
+    Tolerant to negative density altitudes (below sea level conditions)
+
+    Parameters:
+    temperature_f: Temperature in Fahrenheit (-60 to 140°F)
+    pressure_altitude_ft: Pressure altitude in feet (-2,000 to 15,000 ft)
+    gross_weight_lbs: Gross weight in pounds (3,000 to 5,600 lbs)
+    headwind_mph: Headwind component in mph (0 to 25 mph)
+
+    Returns:
+    Accelerate-stop distance in feet
+    """
+
+    # Standard reference conditions
+    TEMP_STD = 59.0      # °F (ISA standard at sea level)
+    ALT_STD = 0.0        # ft
+    WEIGHT_STD = 4400.0  # lbs (mid-range weight)
+    BASE_DISTANCE = 1800.0  # ft
+
+    # Input validation and bounds checking
+    temperature_f = max(-60, min(140, temperature_f))
+    pressure_altitude_ft = max(-2000, min(15000, pressure_altitude_ft))
+    gross_weight_lbs = max(3000, min(5600, gross_weight_lbs))
+    headwind_mph = max(0, min(25, headwind_mph))
+
+    # Temperature factor (air density effect)
+    # Based on ideal gas law: ρ ∝ 1/T
+    temp_rankine = temperature_f + 459.67
+    temp_std_rankine = TEMP_STD + 459.67
+    temp_factor = temp_rankine / temp_std_rankine
+
+    # Altitude factor (pressure altitude effect) - Handle negative altitudes
+    # Standard atmosphere model modified for negative altitudes
+    if pressure_altitude_ft >= -2000:  # Extended range for below sea level
+        # Use modified standard atmosphere that handles negative altitudes
+        # For negative altitudes, air density increases above sea level standard
+        altitude_ratio = 1.0 - 6.8756e-6 * pressure_altitude_ft
+
+        # Ensure altitude_ratio stays positive and reasonable
+        altitude_ratio = max(0.1, min(1.5, altitude_ratio))
+
+        # Calculate density factor (inverse relationship)
+        # Higher density (negative DA) = better performance (lower factor)
+        altitude_factor = altitude_ratio ** (-4.2561)
+
+        # Additional correction for very negative altitudes
+        if pressure_altitude_ft < 0:
+            # Enhanced performance below sea level
+            negative_alt_bonus = abs(pressure_altitude_ft) / 10000.0
+            altitude_factor *= (1.0 - negative_alt_bonus * 0.1)
+            altitude_factor = max(0.5, altitude_factor)  # Prevent over-optimization
+
+    elif pressure_altitude_ft <= 36089:  # Normal positive altitude range
+        altitude_ratio = 1.0 - 6.8756e-6 * pressure_altitude_ft
+        altitude_factor = altitude_ratio ** (-4.2561)
+    else:
+        # Above tropopause (simplified)
+        altitude_factor = 4.0  # Severe performance degradation
+
+    # Weight factor (kinetic energy effect)
+    # Distance ∝ weight (more energy to dissipate)
+    weight_factor = gross_weight_lbs / WEIGHT_STD
+
+    # Headwind factor (relative airspeed effect)
+    # Each mph reduces ground roll distance
+    headwind_factor = 1.0 - (headwind_mph * 0.025)
+    headwind_factor = max(0.4, min(1.0, headwind_factor))  # Reasonable limits
+
+    # Non-linear corrections observed from chart
+    # Modified to handle extreme conditions gracefully
+    temp_deviation = temperature_f - TEMP_STD
+    temp_correction = 1.0 + (temp_deviation / 80.0) ** 2 * 0.08
+
+    # Altitude correction - handle negative altitudes
+    if pressure_altitude_ft >= 0:
+        altitude_correction = 1.0 + (pressure_altitude_ft / 8000.0) ** 1.2 * 0.12
+    else:
+        # Negative altitude provides performance benefit
+        altitude_correction = 1.0 - (abs(pressure_altitude_ft) / 8000.0) ** 0.8 * 0.08
+        altitude_correction = max(0.7, altitude_correction)
+
+    weight_deviation = gross_weight_lbs - WEIGHT_STD
+    weight_correction = 1.0 + (weight_deviation / 1000.0) ** 2 * 0.05
+
+    # Calculate distance with all factors
+    distance = (BASE_DISTANCE *
+                temp_factor *
+                altitude_factor *
+                weight_factor *
+                headwind_factor *
+                temp_correction *
+                altitude_correction *
+                weight_correction)
+
+    # Apply reasonable bounds with extended range for extreme conditions
+    distance = max(600, min(8000, distance))
+
+    return round(distance)
+
 def weight_balance(front, middle, rear, fuel_main, fuel_tips, fbaggage, rbaggage):
     empty_weight = 3193.95
     empty_moment = 290084
@@ -69,6 +170,7 @@ def fetch_metar(airport_code):
     url = f"https://aviationweather.gov/api/data/metar?ids={airport_code}&hours=0&order=id%2C-obs&sep=true"
     response = requests.get(url)
     if response.status_code == 200:
+        print(response.text.strip())
         return response.text.strip()
     return None
 
@@ -269,6 +371,11 @@ if __name__ == "__main__":
     to_gust = headwind_takeoff(headwind_gust * 1.15, to_nw) 
     land_gust = headwind_land(headwind_gust * 1.15, land_nw) 
 
+    tf = (d['temperature_c'] * 9/5 ) + 32
+    start_stop_calm = accelerate_stop_distance(tf, d['pressure_inhg'], weight)
+    start_stop      = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
+    start_stop_gust = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
+
     print(f"{'\nWeather':21} {'Unit':10} {'Value'}")
     print(f"{'-'*20} {'-'*10} {'-'*8}")
 
@@ -296,7 +403,8 @@ if __name__ == "__main__":
     print(f"{'Moment':20} {'in*lbs':10} {int(moment):8,.0f}")
     print(f"{'Center Gravity':20} {'in':10} {cg:8,.1f}")
 
-    print(f"{'\nPerformace':12} {'CG':>6} {'Calm':>6} {'Wind':>6} {'Gusts':>6}")
+    print(f"{'\nPerformace':15} {'Calm':>6} {'Wind':>6} {'Gusts':>6}")
     print("-" * 40)
-    print(f"{'Takeoff, ft':10} {cg:6,.1f} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
-    print(f"{'Landing, ft':10} {cg:6,.1f} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
+    print(f"{'Takeoff, ft':15} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
+    print(f"{'Landing, ft':15} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
+    print(f"{'Start-stop, ft':15} {start_stop_calm:6,.0f} {start_stop:6,.0f} {start_stop_gust:6,.0f}")
