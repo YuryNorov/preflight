@@ -321,12 +321,36 @@ def headwind_land(wind_mph, land50_ft):
                                                       bounds_error=False, fill_value=None)
     return int(interp_func(np.array([land50_ft, wind_mph]))[0])
 
+def print_performance(d, weight, to_nw, land_nw, length, runway):
+    headwind  = int(d['wind_speed_kt'] * math.cos(math.radians(d['wind_direction'] - runway*10)))
+    crosswind = int(d['wind_speed_kt'] * math.sin(math.radians(d['wind_direction'] - runway*10)))
+    to = headwind_takeoff(headwind * 1.15, to_nw) 
+    land = headwind_land(headwind * 1.15, land_nw)
+
+    headwind_gust  = int(d['wind_gust_kt'] * math.cos(math.radians(d['wind_direction'] - runway*10)))
+    crosswind_gust = int(d['wind_gust_kt'] * math.sin(math.radians(d['wind_direction'] - runway*10)))
+    to_gust = headwind_takeoff(headwind_gust * 1.15, to_nw) 
+    land_gust = headwind_land(headwind_gust * 1.15, land_nw) 
+
+    tf = (d['temperature_c'] * 9/5 ) + 32
+    start_stop_calm = accelerate_stop_distance(tf, d['pressure_inhg'], weight)
+    start_stop      = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
+    start_stop_gust = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
+
+    print(f"RW HW CW Length:")
+    print(f"{runway:2} {headwind:2} {crosswind:2}: {length:>5}")
+    print(f"{'Takeoff':15} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
+    print(f"{'Landing':15} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
+    print(f"{'Start-stop':15} {start_stop_calm:6,.0f} {start_stop:6,.0f} {start_stop_gust:6,.0f}")
+    print('─' * 36)
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument("ident", help="ICAO airport ID")
-    parser.add_argument("runway", help="Runway in use", type = int)
+    # TODO: add a logic to enforce runway
+    parser.add_argument("--runway", help="Runway in use", type = int, default = 0) 
 
     parser.add_argument("-f", help="Front raw passangers weight in lbs", default = 200, type = int)
     parser.add_argument("-m", help="Middle raw passangers weight in lbs", default = 0, type = int)
@@ -366,18 +390,6 @@ if __name__ == "__main__":
 
     headwind  = int(d['wind_speed_kt'] * math.cos(math.radians(d['wind_direction'] - runway*10)))
     crosswind = int(d['wind_speed_kt'] * math.sin(math.radians(d['wind_direction'] - runway*10)))
-    to = headwind_takeoff(headwind * 1.15, to_nw) 
-    land = headwind_land(headwind * 1.15, land_nw)
-
-    headwind_gust  = int(d['wind_gust_kt'] * math.cos(math.radians(d['wind_direction'] - runway*10)))
-    crosswind_gust = int(d['wind_gust_kt'] * math.sin(math.radians(d['wind_direction'] - runway*10)))
-    to_gust = headwind_takeoff(headwind_gust * 1.15, to_nw) 
-    land_gust = headwind_land(headwind_gust * 1.15, land_nw) 
-
-    tf = (d['temperature_c'] * 9/5 ) + 32
-    start_stop_calm = accelerate_stop_distance(tf, d['pressure_inhg'], weight)
-    start_stop      = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
-    start_stop_gust = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
 
     print(f"{'\nWeather':21} {'Unit':10} {'Value'}")
     print(f"{'-'*20} {'-'*10} {'-'*8}")
@@ -406,8 +418,20 @@ if __name__ == "__main__":
     print(f"{'Moment':20} {'in*lbs':10} {int(moment):8,.0f}")
     print(f"{'Center Gravity':20} {'in':10} {cg:8,.1f}")
 
-    print(f"{'\nPerformace':15} {'Calm':>6} {'Wind':>6} {'Gusts':>6}")
-    print("-" * 40)
-    print(f"{'Takeoff, ft':15} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
-    print(f"{'Landing, ft':15} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
-    print(f"{'Start-stop, ft':15} {start_stop_calm:6,.0f} {start_stop:6,.0f} {start_stop_gust:6,.0f}")
+    runways = pd.read_csv("runways.csv")
+    runways = runways[runways.airport_ident == ident]
+    if runways.size == 0:
+        runways = runways[runways.airport_ident == ident[1:]]
+
+    print(f'\n{'Performance'}: {'Calm':>9} {'Wind':>6} {'Gusts':>6}')
+    print('─' * 36)
+    for index, row in runways.iterrows():
+        if row.closed == 1:
+            continue
+        length = int(row.length_ft)
+        le = int(row.le_ident)
+        print_performance(d, weight, to_nw, land_nw, length, le)
+
+        le = (le+18)%36
+        print_performance(d, weight, to_nw, land_nw, length, le)
+
