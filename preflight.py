@@ -428,6 +428,9 @@ if __name__ == "__main__":
     for index, row in runways.iterrows():
         if row.closed == 1:
             continue
+        if row.le_ident[-1] == 'W':
+            continue
+
         length = int(row.length_ft)
         le = int(row.le_ident)
         print_performance(d, weight, to_nw, land_nw, length, le)
