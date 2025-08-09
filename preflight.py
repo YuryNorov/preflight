@@ -170,7 +170,6 @@ def fetch_metar(airport_code):
     url = f"https://aviationweather.gov/api/data/metar?ids={airport_code}&hours=0&order=id%2C-obs&sep=true"
     response = requests.get(url)
     if response.status_code == 200:
-        print(response.text.strip())
         return response.text.strip()
     return None
 
@@ -354,6 +353,10 @@ if __name__ == "__main__":
 
     airports = pd.read_csv("airports.csv")
     airport = airports[airports.ident == ident]
+    if airport.size == 0:
+        airport = airports[airports.ident == ident[1:]]
+
+    print(airport)
     elevation = float(airport.elevation_ft.values[0])
 
     da = density_altitude(elevation, d['pressure_inhg'], d['temperature_c'])
