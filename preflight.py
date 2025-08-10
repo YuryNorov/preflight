@@ -348,6 +348,11 @@ def __print_performance(d, weight, to_nw, land_nw, rw, rev):
 
     headwind  = int(d['wind_speed_kt'] * math.cos(math.radians(d['wind_direction'] - le)))
     crosswind = int(d['wind_speed_kt'] * math.sin(math.radians(d['wind_direction'] - le)))
+    if crosswind > 0:
+        crosswind = str(crosswind) + 'R'
+    elif crosswind < 0:
+        crosswind = str(-crosswind) + 'L'
+
     to = headwind_takeoff(headwind * 1.15, to_nw) 
     land = headwind_land(headwind * 1.15, land_nw)
 
@@ -361,8 +366,8 @@ def __print_performance(d, weight, to_nw, land_nw, rw, rev):
     start_stop      = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
     start_stop_gust = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
 
-    print(f"RW  HW CW Length:")
-    print(f"{name:3} {headwind:2} {crosswind:2}: {length:>5}")
+    print(f"RW  HW  CW Length:")
+    print(f"{name:3} {headwind:3} {crosswind:3} {length:>5}")
     print(f"{'Takeoff':15} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
     print(f"{'Landing':15} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
     print(f"{'Start-stop':15} {start_stop_calm:6,.0f} {start_stop:6,.0f} {start_stop_gust:6,.0f}")
