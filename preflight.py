@@ -327,7 +327,7 @@ def rev_name(name):
         name_dir = 36
 
     if len(name) <= 2:
-        return name
+        return str(name_dir)
 
     if name[2] == 'L':
         name = str(name_dir) + 'R'
@@ -375,7 +375,6 @@ def __print_performance(d, weight, to_nw, land_nw, rw, rev):
 
 def print_performance(d, weight, to_nw, land_nw, rw):
     if rw.closed == 1:
-        print(rw.le_ident, "CLOSED")
         return
 
     if rw.le_ident[-1] == 'W':
