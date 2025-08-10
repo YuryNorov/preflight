@@ -374,6 +374,10 @@ def __print_performance(d, weight, to_nw, land_nw, rw, rev):
     print('─' * 36)
 
 def print_performance(d, weight, to_nw, land_nw, rw):
+    if rw.closed == 1:
+        print(rw.le_ident, "CLOSED")
+        return
+
     if rw.le_ident[-1] == 'W':
         return
     __print_performance(d, weight, to_nw, land_nw, rw, False)
@@ -453,15 +457,11 @@ if __name__ == "__main__":
     print(f"{'Center Gravity':20} {'in':10} {cg:8,.1f}")
 
     runways = pd.read_csv("runways.csv")
-    runways = runways[runways.airport_ident == ident]
-    if runways.size == 0:
-        runways = runways[runways.airport_ident == ident[1:]]
+    rws = runways[runways.airport_ident == ident]
+    if rws.size == 0:
+        rws = runways[runways.airport_ident == ident[1:]]
 
     print(f'\n{'Performance'}: {'Calm':>9} {'Wind':>6} {'Gusts':>6}')
     print('─' * 36)
-    for index, rw in runways.iterrows():
-        if rw.closed == 1:
-            continue
-
+    for index, rw in rws.iterrows():
         print_performance(d, weight, to_nw, land_nw, rw)
-
