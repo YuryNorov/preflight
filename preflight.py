@@ -326,7 +326,10 @@ def rev_name(name):
     if name_dir == 0:
         name_dir = 36
 
-    if len(name) > 2 and name[2] == 'L':
+    if len(name) <= 2:
+        return name
+
+    if name[2] == 'L':
         name = str(name_dir) + 'R'
     else:
         name = str(name_dir) + 'L'
@@ -358,7 +361,7 @@ def __print_performance(d, weight, to_nw, land_nw, rw, rev):
     start_stop      = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
     start_stop_gust = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
 
-    print(f"RW HW CW Length:")
+    print(f"RW  HW CW Length:")
     print(f"{name:3} {headwind:2} {crosswind:2}: {length:>5}")
     print(f"{'Takeoff':15} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
     print(f"{'Landing':15} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
@@ -388,7 +391,7 @@ if __name__ == "__main__":
     parser.add_argument("-B", help="Front baggage in lbs", default = 10, type = int)
 
     args = parser.parse_args()
-    ident = args.ident
+    ident = args.ident.upper()
     runway = int(args.runway)
 
     metar = fetch_metar(ident)
@@ -407,7 +410,6 @@ if __name__ == "__main__":
     if airport.size == 0:
         airport = airports[airports.ident == ident[1:]]
 
-    print(airport)
     elevation = float(airport.elevation_ft.values[0])
 
     da = density_altitude(elevation, d['pressure_inhg'], d['temperature_c'])
