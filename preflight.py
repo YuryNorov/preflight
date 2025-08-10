@@ -286,31 +286,18 @@ def headwind_takeoff(w, t) :
           - 1.500000e-02 * w**3)
     return int(d)
 
-def headwind_land(wind_mph, land50_ft):
-    DIST = np.array([
-                 [ 1190, 1105, 1025,  950 ],  #  1  
-                 [ 1270, 1190, 1105, 1020 ],  #  2
-                 [ 1350, 1265, 1180, 1100 ],  #  3
-                 [ 1430, 1345, 1255, 1170 ],  #  4
-                 [ 1505, 1415, 1330, 1240 ],  #  5
-                 [ 1600, 1500, 1400, 1300 ],  #  6
-                 [ 1660, 1560, 1460, 1360 ],  #  7
-                 [ 1770, 1660, 1550, 1450 ],  #  8
-                 [ 1870, 1755, 1645, 1540 ],  #  9
-                 [ 1990, 1880, 1770, 1660 ],  # 10
-                 [ 2110, 1995, 1880, 1765 ]  # 11
-             ])
-    # Grid axes
-    wind = np.array([0, 5, 10, 15])  # x-axis
-    la50 = np.array([1190, 1270, 1350, 1430,
-                     1505, 1600, 1660, 1770,
-                     1870, 1990, 2110])
-    
-    # Interpolator with extrapolation allowed
-    interp_func = interpolate.RegularGridInterpolator((la50, wind), DIST,
-                                                      method="linear",
-                                                      bounds_error=False, fill_value=None)
-    return int(interp_func(np.array([land50_ft, wind_mph]))[0])
+def headwind_land(w, l):
+    dist = (-7.384758e+02
+            + 2.398023e+00 * l
+            - 4.749474e-01 * w
+            - 8.651134e-04 * l**2
+            - 1.528699e-02 * l*w
+            - 3.277356e-02 * w**2
+            + 1.751042e-07 * l**3
+            + 2.111363e-06 * l**2*w
+            + 3.409930e-06 * l*w**2
+            + 2.424242e-03 * w**3)
+    return int(dist)
 
 def rev_name(name):
     name_dir = (int(name[:2]) + 18) % 36
