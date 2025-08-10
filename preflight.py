@@ -321,14 +321,35 @@ def headwind_land(wind_mph, land50_ft):
                                                       bounds_error=False, fill_value=None)
     return int(interp_func(np.array([land50_ft, wind_mph]))[0])
 
-def print_performance(d, weight, to_nw, land_nw, length, runway):
-    headwind  = int(d['wind_speed_kt'] * math.cos(math.radians(d['wind_direction'] - runway*10)))
-    crosswind = int(d['wind_speed_kt'] * math.sin(math.radians(d['wind_direction'] - runway*10)))
+def rev_name(name):
+    name_dir = (int(name[:2]) + 18) % 36
+    if name_dir == 0:
+        name_dir = 36
+
+    if len(name) > 2 and name[2] == 'L':
+        name = str(name_dir) + 'R'
+    else:
+        name = str(name_dir) + 'L'
+
+    return name
+
+
+def __print_performance(d, weight, to_nw, land_nw, rw, rev):
+    length = int(rw.length_ft)
+    name = rw.le_ident
+    if rev == False:
+        le = float(rw.he_heading_degT)
+    else:
+        le = (float(rw.he_heading_degT) + 180) % 360
+        name = rev_name(name)
+
+    headwind  = int(d['wind_speed_kt'] * math.cos(math.radians(d['wind_direction'] - le)))
+    crosswind = int(d['wind_speed_kt'] * math.sin(math.radians(d['wind_direction'] - le)))
     to = headwind_takeoff(headwind * 1.15, to_nw) 
     land = headwind_land(headwind * 1.15, land_nw)
 
-    headwind_gust  = int(d['wind_gust_kt'] * math.cos(math.radians(d['wind_direction'] - runway*10)))
-    crosswind_gust = int(d['wind_gust_kt'] * math.sin(math.radians(d['wind_direction'] - runway*10)))
+    headwind_gust  = int(d['wind_gust_kt'] * math.cos(math.radians(d['wind_direction'] - le)))
+    crosswind_gust = int(d['wind_gust_kt'] * math.sin(math.radians(d['wind_direction'] - le)))
     to_gust = headwind_takeoff(headwind_gust * 1.15, to_nw) 
     land_gust = headwind_land(headwind_gust * 1.15, land_nw) 
 
@@ -338,11 +359,17 @@ def print_performance(d, weight, to_nw, land_nw, length, runway):
     start_stop_gust = accelerate_stop_distance(tf, d['pressure_inhg'], weight, headwind_gust * 1.15)
 
     print(f"RW HW CW Length:")
-    print(f"{runway:2} {headwind:2} {crosswind:2}: {length:>5}")
+    print(f"{name:3} {headwind:2} {crosswind:2}: {length:>5}")
     print(f"{'Takeoff':15} {to_nw:6,.0f} {to:6,.0f} {to_gust:6,.0f}")
     print(f"{'Landing':15} {land_nw:6,.0f} {land:6,.0f} {land_gust:6,.0f}")
     print(f"{'Start-stop':15} {start_stop_calm:6,.0f} {start_stop:6,.0f} {start_stop_gust:6,.0f}")
     print('─' * 36)
+
+def print_performance(d, weight, to_nw, land_nw, rw):
+    if rw.le_ident[-1] == 'W':
+        return
+    __print_performance(d, weight, to_nw, land_nw, rw, False)
+    __print_performance(d, weight, to_nw, land_nw, rw, True)
 
 if __name__ == "__main__":
 
@@ -425,16 +452,9 @@ if __name__ == "__main__":
 
     print(f'\n{'Performance'}: {'Calm':>9} {'Wind':>6} {'Gusts':>6}')
     print('─' * 36)
-    for index, row in runways.iterrows():
-        if row.closed == 1:
-            continue
-        if row.le_ident[-1] == 'W':
+    for index, rw in runways.iterrows():
+        if rw.closed == 1:
             continue
 
-        length = int(row.length_ft)
-        le = int(row.le_ident)
-        print_performance(d, weight, to_nw, land_nw, length, le)
-
-        le = (le+18)%36
-        print_performance(d, weight, to_nw, land_nw, length, le)
+        print_performance(d, weight, to_nw, land_nw, rw)
 
