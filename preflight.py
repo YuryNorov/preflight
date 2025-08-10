@@ -275,25 +275,16 @@ def landing_50_nowind(weight, da) :
     interp_func = interpolate.RegularGridInterpolator((W, DA), DIST, bounds_error=False, fill_value=None)
     return int(interp_func(np.array([weight, da]))[0])
 
-def headwind_takeoff(wind_mph, to50_ft) : 
-    DIST = np.array([[ 980,  870,  770,  670  ],  
-                     [1170, 1050,  940,  820  ],  
-                     [1390, 1240, 1110,  980  ],  
-                     [1650, 1490, 1340, 1190 ],
-                     [1920, 1750, 1590, 1450 ],
-                     [2280, 2060, 1860, 1690 ],
-                     [2950, 2650, 2420, 2200 ],
-                     [3810, 3480, 3190, 2950 ]])
-    
-    # Grid axes
-    wind = np.array([0, 5, 10, 15])  # x-axis
-    to50 = np.array([980, 1170, 1390, 1650, 1920, 2280, 2950, 3810])  # y-axis
-    
-    # Interpolator with extrapolation allowed
-    interp_func = interpolate.RegularGridInterpolator((to50, wind), DIST,
-                                                      method="linear",
-                                                      bounds_error=False, fill_value=None)
-    return int(interp_func(np.array([to50_ft, wind_mph]))[0])
+def headwind_takeoff(w, t) :
+    d =   (- 1.345024e+02 + 1.212677e+00 * t - 1.580498e+00 * w
+          - 1.001003e-04 * t**2
+          + 1.770352e-02 * w**2
+          - 2.179669e-02 * t*w
+          + 1.417450e-08 * t**3
+          + 7.076594e-07 * t**2*w
+          + 3.379797e-04 * t*w**2
+          - 1.500000e-02 * w**3)
+    return int(d)
 
 def headwind_land(wind_mph, land50_ft):
     DIST = np.array([
