@@ -164,11 +164,14 @@ def parse_metar(metar):
         'wind_speed_kt': 0,
         'wind_gust_kt': 0,
         'variable_wind_dir': None,
-        'temperature_c': None,
-        'dewpoint_c': None,
-        'pressure_inhg': None,
+        'temperature_c': 15,
+        'dewpoint_c': 15,
+        'pressure_inhg': 28.89,
         'remarks': None
     }
+
+    if not metar:
+        return result
 
     tokens = metar.split()
 
@@ -345,8 +348,35 @@ def print_performance(d, weight, to_nw, land_nw, rw):
     __print_performance(d, weight, to_nw, land_nw, rw, False)
     __print_performance(d, weight, to_nw, land_nw, rw, True)
 
-if __name__ == "__main__":
+def print_weather(ident, elevation) :
+    metar = fetch_metar(ident)
+    d = parse_metar(metar)
+    if not metar:
+        print("Failed to fetch METAR.")
+        return d, elevation, elevation
 
+
+    print("METAR: " + metar)
+
+    da = density_altitude(elevation, d['pressure_inhg'], d['temperature_c'])
+    pa = pressure_altitude(elevation, d['pressure_inhg'])
+
+    print(f"{'\nWeather':21} {'Unit':10} {'Value'}")
+    print(f"{'-'*20} {'-'*10} {'-'*8}")
+
+    print(f"{f'{ident} elevation':20} {'ft':10} {elevation}")
+    print(f"{'Wind direction':20} {'deg':10} {d['wind_direction']}")
+    print(f"{'Wind speed':20} {'kt':10} {d['wind_speed_kt']}")
+    print(f"{'Wind gust':20} {'kt':10} {d['wind_gust_kt'] or 0}")
+    print(f"{'Temperature':20} {'°C':10} {d['temperature_c']}")
+    print(f"{'Dew point':20} {'°C':10} {d['dewpoint_c']}")
+    print(f"{'Pressure':20} {'inHg':10} {d['pressure_inhg']}")
+    print(f"{'Pressure altitude':20} {'inHg':10} {pa}")
+    print(f"{'Density altitude':20} {'inHg':10} {da}")
+
+    return d, pa, da
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("ident", help="ICAO airport ID")
@@ -365,15 +395,6 @@ if __name__ == "__main__":
     ident = args.ident.upper()
     runway = int(args.runway)
 
-    metar = fetch_metar(ident)
-    if not metar:
-        print("Failed to fetch METAR.")
-        exit(1)
-
-    d = parse_metar(metar)
-
-    print("METAR: " + metar)
-
     weight, moment, cg = weight_balance(args.f, args.m, args.r, args.g, args.G, args.B, args.b)
 
     airports = pd.read_csv("airports.csv")
@@ -382,24 +403,10 @@ if __name__ == "__main__":
         airport = airports[airports.ident == ident[1:]]
 
     elevation = float(airport.elevation_ft.values[0])
+    d, pa, da = print_weather(ident, elevation)
 
-    da = density_altitude(elevation, d['pressure_inhg'], d['temperature_c'])
-    pa = pressure_altitude(elevation, d['pressure_inhg'])
     to_nw = takeoff_50_nowind(weight, da)
     land_nw = landing_50_nowind(weight, da)
-
-    print(f"{'\nWeather':21} {'Unit':10} {'Value'}")
-    print(f"{'-'*20} {'-'*10} {'-'*8}")
-
-    print(f"{f'{ident} elevation':20} {'ft':10} {elevation}")
-    print(f"{'Wind direction':20} {'deg':10} {d['wind_direction']}")
-    print(f"{'Wind speed':20} {'kt':10} {d['wind_speed_kt']}")
-    print(f"{'Wind gust':20} {'kt':10} {d['wind_gust_kt'] or 0}")
-    print(f"{'Temperature':20} {'°C':10} {d['temperature_c']}")
-    print(f"{'Dew point':20} {'°C':10} {d['dewpoint_c']}")
-    print(f"{'Pressure':20} {'inHg':10} {d['pressure_inhg']}")
-    print(f"{'Pressure altitude':20} {'inHg':10} {pa}")
-    print(f"{'Density altitude':20} {'inHg':10} {da}")
 
     print(f"{'\nAirplane':21} {'Unit':10} {'Value'}")
     print(f"{'-'*20} {'-'*10} {'-'*8}")
