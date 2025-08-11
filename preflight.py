@@ -388,9 +388,6 @@ if __name__ == "__main__":
     to_nw = takeoff_50_nowind(weight, da)
     land_nw = landing_50_nowind(weight, da)
 
-    headwind  = int(d['wind_speed_kt'] * math.cos(math.radians(d['wind_direction'] - runway*10)))
-    crosswind = int(d['wind_speed_kt'] * math.sin(math.radians(d['wind_direction'] - runway*10)))
-
     print(f"{'\nWeather':21} {'Unit':10} {'Value'}")
     print(f"{'-'*20} {'-'*10} {'-'*8}")
 
@@ -403,14 +400,6 @@ if __name__ == "__main__":
     print(f"{'Pressure':20} {'inHg':10} {d['pressure_inhg']}")
     print(f"{'Pressure altitude':20} {'inHg':10} {pa}")
     print(f"{'Density altitude':20} {'inHg':10} {da}")
-    print(f"{'Headwind':20} {'KT':10} {headwind}")
-
-    if crosswind < 0:
-        print(f"{'Crosswind':20} {'KT':10} {abs(crosswind)} LEFT")
-    elif crosswind > 0:
-        print(f"{'Crosswind':20} {'KT':10} {crosswind} RIGHT")
-    else:
-        print(f"{'Crosswind':20} {'KT':10} 0")
 
     print(f"{'\nAirplane':21} {'Unit':10} {'Value'}")
     print(f"{'-'*20} {'-'*10} {'-'*8}")
