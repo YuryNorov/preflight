@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 
-from scipy import interpolate
-import numpy as np
-
-import sys
 import argparse
 import math
 import requests
 import re
-from bs4 import BeautifulSoup
 
 import pandas as pd
 
@@ -139,18 +134,6 @@ def weight_balance(front, middle, rear, fuel_main, fuel_tips, fbaggage, rbaggage
 
     return weight, moment, moment / weight
 
-wind = np.array([ 0, 5, 10, 15])
-to50 = np.array([ 980, 1170, 1390, 1650, 1920, 2280, 2950, 3810 ])
-dist = np.array([[ 980,  870,  770,  670  ],
-                 [ 1170, 1050, 940,  820  ],
-                 [ 1390, 1240, 1110, 980  ],
-                 [ 1650, 1490, 1340, 1190 ],
-                 [ 1920, 1750, 1590, 1450 ],
-                 [ 2280, 2060, 1860, 1690 ],
-                 [ 2950, 2650, 2420, 2200 ],
-                 [ 3810, 3480, 3190, 2950 ],
-               ])
-
 # https://ourairports.com/data/airports.csv
 def load_airports_csv(filepath="airports.csv"):
     return pd.read_csv(filepath)
@@ -264,17 +247,18 @@ def takeoff_50_nowind(w, da) :
             + 7.058259e-08 * w**3)
     return int(dist)
 
-def landing_50_nowind(weight, da) : 
-    DA = np.arange(0, 9000, 1000)  # 9 values: 0 to 8000
-    W = np.array([4000, 4400, 4800, 5200])  # 4 values
-    DIST = np.array([[1380, 1407, 1437, 1470, 1505, 1540, 1575, 1615, 1655],
-                     [1480, 1510, 1540, 1575, 1610, 1650, 1690, 1730, 1775],
-                     [1580, 1610, 1645, 1685, 1725, 1770, 1810, 1855, 1900],
-                     [1680, 1715, 1750, 1790, 1835, 1880, 1925, 1975, 2025]])
-
-    # Interpolator
-    interp_func = interpolate.RegularGridInterpolator((W, DA), DIST, bounds_error=False, fill_value=None)
-    return int(interp_func(np.array([weight, da]))[0])
+def landing_50_nowind(w, da) : 
+    dist = (7.619239e-04
+           - 1.129351e-01 * da
+           + 1.161095e+00 * w
+           - 5.460050e-05 * da**2
+           + 1.580332e-04 * da*w
+           - 3.224121e-04 * w**2
+           + 1.491857e-09 * da**3
+           + 8.151763e-09 * da**2*w
+           - 2.389780e-08 * da*w**2
+           + 2.976384e-08 * w**3)
+    return int(dist)
 
 def headwind_takeoff(w, t) :
     d =   (- 1.345024e+02 + 1.212677e+00 * t - 1.580498e+00 * w
