@@ -251,17 +251,18 @@ def density_altitude(elev, altimeter, oat):
 ###  Take-off Distance  ####
 ############################
 
-def takeoff_50_nowind(weight, da) : 
-    DA = np.arange(0, 9000, 1000)  # 9 values: 0 to 8000
-    W = np.array([4000, 4400, 4800, 5200])  # 4 values
-    DIST = np.array([[1380, 1440, 1220, 1290, 1390, 1490, 1600, 1700, 1820],
-                     [1250, 1300, 1370, 1470, 1570, 1680, 1800, 1920, 2050],
-                     [1400, 1450, 1540, 1650, 1800, 1950, 2100, 2250, 2400],
-                     [1580, 1630, 1730, 1860, 2020, 2200, 2400, 2600, 2800]])
-
-    # Interpolator
-    interp_func = interpolate.RegularGridInterpolator((W, DA), DIST, bounds_error=False, fill_value=None)
-    return int(interp_func(np.array([weight, da]))[0])
+def takeoff_50_nowind(w, da) :
+    dist = (1.317919e-03
+            - 9.248807e-01 * da
+            + 2.010712e+00 * w
+            - 1.382750e-04 * da**2
+            + 6.107982e-04 * da*w
+            - 7.011730e-04 * w**2
+            + 4.315973e-09 * da**3
+            + 2.147113e-08 * da**2*w
+            - 8.016888e-08 * da*w**2
+            + 7.058259e-08 * w**3)
+    return int(dist)
 
 def landing_50_nowind(weight, da) : 
     DA = np.arange(0, 9000, 1000)  # 9 values: 0 to 8000
